@@ -43,6 +43,7 @@ namespace WorkQueue.Controllers
                 Status = (int)w.Status,
                 Priority = (int)w.Priority,
                 w.DueDate,
+                AssigneeId = w.AssigneeUser != null ? w.AssigneeUser.Id : (Guid?)null,
                 AssigneeName = w.AssigneeUser != null ? w.AssigneeUser.Name : null
             }).ToListAsync();
 

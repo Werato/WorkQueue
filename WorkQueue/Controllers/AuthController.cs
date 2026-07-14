@@ -42,7 +42,6 @@ namespace WorkQueue.Controllers
                 return Unauthorized("Неверный email или пароль");
             }
 
-            // Формируем Claims (данные, зашитые внутри токена)
             var claims = new[]
             {
                 new Claim(JwtRegisteredClaimNames.Sub, user.Id.ToString()),
@@ -52,7 +51,6 @@ namespace WorkQueue.Controllers
                 new Claim("Name", user.Name)
             };
 
-            // Генерируем токен
             var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["Jwt:Key"]!));
             var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
@@ -60,11 +58,10 @@ namespace WorkQueue.Controllers
                 issuer: _configuration["Jwt:Issuer"],
                 audience: _configuration["Jwt:Audience"],
                 claims: claims,
-                expires: DateTime.UtcNow.AddHours(2), // Токен живет 2 часа
+                expires: DateTime.UtcNow.AddHours(2), 
                 signingCredentials: creds
             );
 
-            // ТЗ требует вернуть токен и базовый профиль юзера
             return Ok(new
             {
                 Token = new JwtSecurityTokenHandler().WriteToken(token),
@@ -80,7 +77,6 @@ namespace WorkQueue.Controllers
             });
         }
 
-        // Вспомогательный метод для хэширования пароля (должен совпадать с логикой DataSeeder)
         private string HashPassword(string password)
         {
             using var sha256 = SHA256.Create();
@@ -89,7 +85,7 @@ namespace WorkQueue.Controllers
         }
     }
 
-    // DTO для принятия данных логина
+    // DTO 
     public class LoginRequest
     {
         public string Email { get; set; } = string.Empty;

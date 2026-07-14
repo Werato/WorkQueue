@@ -54,7 +54,6 @@ namespace WorkQueue.Infrastructure
                       .HasDatabaseName("IX_WorkItems_Tenant_Filters");
             });
 
-            // Настройка связей для Comment
             modelBuilder.Entity<Comment>(entity =>
             {
                 entity.HasKey(c => c.Id);

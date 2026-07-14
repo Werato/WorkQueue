@@ -26,7 +26,7 @@ namespace WorkQueue.Controllers
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] int? status, [FromQuery] int? priority)
         {
-            // Обрати внимание: мы НЕ пишем WHERE OrganizationId = ...
+            // WHERE OrganizationId = ...
             var query = _context.WorkItems.Include(w => w.AssigneeUser).AsQueryable();
 
             if (status.HasValue)

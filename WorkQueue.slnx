@@ -1,5 +1,6 @@
 <Solution>
   <Project Path="Domain/WorkQueue.Domain.csproj" Id="61d5f3b9-350b-4bb5-91bd-447aa3c87cfd" />
   <Project Path="WorkQueue.Infrastructure/WorkQueue.Infrastructure.csproj" Id="8d05e4bf-838e-4dca-bd64-8eb706e8f647" />
+  <Project Path="WorkQueue.Tests/WorkQueue.Tests.csproj" />
   <Project Path="WorkQueue/WorkQueue.csproj" />
 </Solution>

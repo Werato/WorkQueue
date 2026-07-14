@@ -20,6 +20,7 @@ export class WorkItemsComponent implements OnInit {
 	private fb = inject(FormBuilder);
 	private cdr = inject(ChangeDetectorRef);
 
+	dashboardSummary: any = null;
 	userName = '';
 	orgName = '';
 	workItems: WorkItem[] = [];
@@ -53,7 +54,7 @@ export class WorkItemsComponent implements OnInit {
 			status: [0],
 			assigneeId: [null]
 		});
-			
+		
 			const profileStr = localStorage.getItem('user_profile');
 			if (profileStr) {
 				const profile = JSON.parse(profileStr);
@@ -71,11 +72,18 @@ export class WorkItemsComponent implements OnInit {
 				}
 			}
 		}
-
+		this.loadSummary();
 		this.loadWorkItems();
 		this.loadUsers();
 	}
-
+	loadSummary() {
+		this.workItemService.getDashboardSummary().subscribe({
+		  next: (data) => {
+			this.dashboardSummary = data;
+		  },
+		  error: (err) => console.error(err)
+		});
+	}
 	loadWorkItems() {
 	  this.workItemService.getWorkItems(
 		this.currentPage,

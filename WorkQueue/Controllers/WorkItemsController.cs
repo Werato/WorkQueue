@@ -223,20 +223,42 @@ namespace WorkQueue.Controllers
             }
 
         }
-    }
+        // POST: api/workitems/{id}/assign
+        [HttpPost("{id}/assign")]
+        public async Task<IActionResult> Assign(Guid id, [FromBody] AssignWorkItemRequest request)
+        {
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
 
-    // (DTO) 
-    public class CreateWorkItemRequest
-    {
-        public string Title { get; set; }
-        public string Description { get; set; }
-        public int Priority { get; set; }
-        public DateTime? DueDate { get; set; }
-        public Guid? AssigneeId { get; set; }
-    }
+            // 1. Business rule: Only Manager can assign tasks
+            if (userRole != "Manager")
+            {
+                return StatusCode(403, "Only a Manager can assign tasks.");
+            }
 
-    public class UpdateWorkItemRequest : CreateWorkItemRequest
-    {
-        public int Status { get; set; }
+            var workItem = await _context.WorkItems.FindAsync(id);
+            if (workItem == null) return NotFound();
+
+            // 2. Business rule: Assignee must be from the same Organization
+            // EF Core Global Query Filter on 'User' entity automatically ensures this.
+            // If the user belongs to another tenant, FindAsync will return null.
+            var assignee = await _context.Users.FindAsync(request.AssigneeId);
+            if (assignee == null)
+            {
+                return BadRequest("Target user not found or does not belong to your organization.");
+            }
+
+            // 3. Apply assignment
+            workItem.AssigneeUserId = request.AssigneeId;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("The record was modified by another user.");
+            }
+        }
     }
 }

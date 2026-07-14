@@ -1,5 +1,31 @@
 <div class="dashboard">
   <header class="header">
+  <div class="dashboard-summary" *ngIf="dashboardSummary" style="display: flex; gap: 15px; margin: 20px 0; background: #f8f9fa; padding: 15px; border-radius: 8px;">
+    <div style="flex: 1; text-align: center; padding: 10px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px;">
+      <div style="font-size: 24px; font-weight: bold; color: #0d6efd;">{{ dashboardSummary.new }}</div>
+      <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">New</div>
+    </div>
+    
+    <div style="flex: 1; text-align: center; padding: 10px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px;">
+      <div style="font-size: 24px; font-weight: bold; color: #fd7e14;">{{ dashboardSummary.inProgress }}</div>
+      <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">In Progress</div>
+    </div>
+
+    <div style="flex: 1; text-align: center; padding: 10px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px;">
+      <div style="font-size: 24px; font-weight: bold; color: #6f42c1;">{{ dashboardSummary.blocked }}</div>
+      <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Blocked</div>
+    </div>
+
+    <div style="flex: 1; text-align: center; padding: 10px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px;">
+      <div style="font-size: 24px; font-weight: bold; color: #198754;">{{ dashboardSummary.done }}</div>
+      <div style="font-size: 12px; color: #6c757d; text-transform: uppercase;">Done</div>
+    </div>
+
+    <div style="flex: 1; text-align: center; padding: 10px; background: white; box-shadow: 0 1px 3px rgba(0,0,0,0.1); border-radius: 4px; border-bottom: 3px solid #dc3545;">
+      <div style="font-size: 24px; font-weight: bold; color: #dc3545;">{{ dashboardSummary.overdue }}</div>
+      <div style="font-size: 12px; color: #dc3545; text-transform: uppercase;">Overdue</div>
+    </div>
+  </div>
     <div>
       <h2>{{ orgName }}</h2>
       <p>{{ userName }}!</p>

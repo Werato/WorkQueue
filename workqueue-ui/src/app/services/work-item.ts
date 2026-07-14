@@ -54,4 +54,7 @@ updateWorkItem(id: string, item: any): Observable<any> {
   addComment(workItemId: string, text: string): Observable<any> {
     return this.http.post(`${this.apiUrl}/${workItemId}/comments`, { text });
   }
+	getDashboardSummary(): Observable<any> {
+		return this.http.get<any>('https://localhost:7122/api/dashboard/summary');
+	}
 }

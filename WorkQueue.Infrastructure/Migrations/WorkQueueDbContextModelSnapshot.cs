@@ -34,6 +34,9 @@ namespace WorkQueue.Infrastructure.Migrations
                     b.Property<Guid>("CreatedByUserId")
                         .HasColumnType("uniqueidentifier");
 
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uniqueidentifier");
+
                     b.Property<string>("Text")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -44,6 +47,8 @@ namespace WorkQueue.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CreatedByUserId");
+
+                    b.HasIndex("OrganizationId");
 
                     b.HasIndex("WorkItemId");
 
@@ -163,6 +168,12 @@ namespace WorkQueue.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("WorkQueue.Domain.Entities.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("WorkQueue.Domain.Entities.WorkItem", "WorkItem")
                         .WithMany("Comments")
                         .HasForeignKey("WorkItemId")
@@ -170,6 +181,8 @@ namespace WorkQueue.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("CreatedByUser");
+
+                    b.Navigation("Organization");
 
                     b.Navigation("WorkItem");
                 });

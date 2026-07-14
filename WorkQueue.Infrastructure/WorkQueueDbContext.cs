@@ -24,6 +24,7 @@ namespace WorkQueue.Infrastructure
             // TENANT ISOLATION
             // WHERE OrganizationId =
             modelBuilder.Entity<WorkItem>().HasQueryFilter(w => w.OrganizationId == _currentUserService.GetOrganizationId());
+            modelBuilder.Entity<Comment>().HasQueryFilter(c => c.OrganizationId == _currentUserService.GetOrganizationId());
             modelBuilder.Entity<User>().HasQueryFilter(u => u.OrganizationId == _currentUserService.GetOrganizationId());
 
             // WorkItem references 

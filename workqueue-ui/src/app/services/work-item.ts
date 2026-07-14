@@ -40,7 +40,10 @@ getWorkItems(page: number, pageSize: number, search?: string, status?: number, p
   getUsers(): Observable<any[]> {
     return this.http.get<any[]>('https://localhost:7122/api/users'); 
   }
-
+  
+transitionWorkItem(id: string, newStatus: number): Observable<any> {
+  return this.http.post<any>(`${this.apiUrl}/${id}/transition`, { newStatus });
+}
 updateWorkItem(id: string, item: any): Observable<any> {
   return this.http.patch<any>(`${this.apiUrl}/${id}`, item);
 }

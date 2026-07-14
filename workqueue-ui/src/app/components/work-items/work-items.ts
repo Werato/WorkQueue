@@ -210,4 +210,16 @@ onFilterChange() {
       error: (err: any) => console.error('Error: ', err)
     });
   }
+  
+  changeStatus(id: string, newStatus: number) {
+  this.workItemService.transitionWorkItem(id, newStatus).subscribe({
+    next: () => {
+      this.loadWorkItems();
+    },
+    error: (err) => {
+      alert(err.error || 'Failed to change status');
+    }
+  });
+}
+  
 }

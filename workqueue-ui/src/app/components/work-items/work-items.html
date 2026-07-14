@@ -121,6 +121,12 @@
 	<!--MODAL[END]-->
   
     <div class="task-card" *ngFor="let item of workItems" (click)="openEditForm(item)">
+	<div class="card-actions" (click)="$event.stopPropagation()" style="margin-top: 10px; display: flex; gap: 5px;">
+		<button *ngIf="item.status === 0" (click)="changeStatus(item.id, 1)" class="btn-sm">Start</button>
+		<button *ngIf="item.status === 1" (click)="changeStatus(item.id, 2)" class="btn-sm">Complete</button>
+		<button *ngIf="item.status === 1" (click)="changeStatus(item.id, 3)" class="btn-sm">Block</button>
+		<button *ngIf="item.status === 3" (click)="changeStatus(item.id, 1)" class="btn-sm">Unblock</button>
+	</div>
       <div class="card-header">
         <span class="status" [class]="'status-' + item.status">{{ getStatusName(item.status) }}</span>
         <span class="priority" [class]="'priority-' + item.priority">{{ getPriorityName(item.priority) }}</span>

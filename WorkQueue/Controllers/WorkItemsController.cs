@@ -23,33 +23,6 @@ namespace WorkQueue.Controllers
             _currentUserService = currentUserService;
         }
 
-        // GET: api/workitems
-        //[HttpGet]
-        //public async Task<IActionResult> Get([FromQuery] int? status, [FromQuery] int? priority)
-        //{
-        //    // WHERE OrganizationId = ...
-        //    var query = _context.WorkItems.Include(w => w.AssigneeUser).AsQueryable();
-
-        //    if (status.HasValue)
-        //        query = query.Where(w => (int)w.Status == status.Value);
-
-        //    if (priority.HasValue)
-        //        query = query.Where(w => (int)w.Priority == priority.Value);
-
-        //    var items = await query.Select(w => new
-        //    {
-        //        w.Id,
-        //        w.Title,
-        //        w.Description,
-        //        Status = (int)w.Status,
-        //        Priority = (int)w.Priority,
-        //        w.DueDate,
-        //        AssigneeId = w.AssigneeUser != null ? w.AssigneeUser.Id : (Guid?)null,
-        //        AssigneeName = w.AssigneeUser != null ? w.AssigneeUser.Name : null
-        //    }).ToListAsync();
-
-        //    return Ok(items);
-        //}
         [HttpGet]
         public async Task<IActionResult> Get([FromQuery] WorkItemQueryParameters parameters)
         {
@@ -116,6 +89,68 @@ namespace WorkQueue.Controllers
 
             return Ok(response);
         }
+
+        // POST: api/workitems/{id}/transition
+        [HttpPost("{id}/transition")]
+        public async Task<IActionResult> Transition(Guid id, [FromBody] TransitionWorkItemRequest request)
+        {
+            var workItem = await _context.WorkItems.FindAsync(id);
+            if (workItem == null) return NotFound();
+
+            var userRole = User.FindFirstValue(ClaimTypes.Role);
+            var userId = _currentUserService.GetUserId();
+
+            // 1. Authorization check: Member can only change their own tasks
+            if (userRole == "Member" && workItem.AssigneeUserId != userId)
+            {
+                return StatusCode(403, "You cannot change the status of another user's task.");
+            }
+
+            var currentStatus = workItem.Status;
+            var targetStatus = (WorkItemStatus)request.NewStatus;
+
+            if (currentStatus == targetStatus) return Ok();
+
+            // 2. Business rule: Member cannot reopen a Done task
+            if (currentStatus == WorkItemStatus.Done && userRole == "Member")
+            {
+                return StatusCode(403, "Only a Manager can reopen a completed task.");
+            }
+
+            // 3. State Machine transitions
+            bool isValidTransition = (currentStatus, targetStatus) switch
+            {
+                (WorkItemStatus.New, WorkItemStatus.InProgress) => true,
+
+                (WorkItemStatus.InProgress, WorkItemStatus.Done) => true,
+                (WorkItemStatus.InProgress, WorkItemStatus.Blocked) => true,
+
+                (WorkItemStatus.Blocked, WorkItemStatus.InProgress) => true,
+
+                (WorkItemStatus.Done, WorkItemStatus.InProgress) when userRole == "Manager" => true,
+
+                _ => false
+            };
+
+            if (!isValidTransition)
+            {
+                return BadRequest($"Invalid status transition from {currentStatus} to {targetStatus}.");
+            }
+
+            // 4. Apply changes
+            workItem.Status = targetStatus;
+
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("The record was modified by another user.");
+            }
+        }
+
         // POST: api/workitems
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateWorkItemRequest request)

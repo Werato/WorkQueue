@@ -1,0 +1,143 @@
+<div class="dashboard">
+  <header class="header">
+    <div>
+      <h2>{{ orgName }}</h2>
+      <p>{{ userName }}!</p>
+    </div>
+    <button (click)="logout()" class="btn-logout">Log out</button>
+  </header>
+
+  <div class="controls">
+    <div class="filters">
+      <select [(ngModel)]="selectedStatus" (change)="onFilterChange()">
+        <option [ngValue]="null">All statuss</option>
+        <option [ngValue]="0">To Do</option>
+        <option [ngValue]="1">In Progress</option>
+        <option [ngValue]="2">Done</option>
+      </select>
+
+      <select [(ngModel)]="selectedPriority" (change)="onFilterChange()">
+        <option [ngValue]="null">All priority</option>
+        <option [ngValue]="0">Low</option>
+        <option [ngValue]="1">Normal</option>
+        <option [ngValue]="2">High</option>
+      </select>
+    </div>
+	<button *ngIf="userRole === 'Manager'" class="btn-primary" (click)="openCreateForm()">Create task</button>
+  </div>
+  
+<div class="filters">
+  <input type="text" [(ngModel)]="searchQuery" (keyup.enter)="onSearch()" placeholder="Search..." style="padding: 8px; margin-right: 10px;">
+  
+  <select [(ngModel)]="sortBy" (change)="onFilterChange()">
+    <option value="createdDate">Newest</option>
+    <option value="dueDate">Deadline</option>
+    <option value="priority">Priority</option>
+  </select>
+  
+  <button class="btn-secondary" (click)="onSearch()">Find</button>
+</div>
+
+  <div class="card-grid">
+    <div *ngIf="workItems.length === 0" class="empty-state">
+      No task.
+    </div>
+	<!--MODAL[start]-->
+		<div class="modal-overlay" *ngIf="showCreateForm">
+  <div class="modal-content">
+    <h3>{{ editingTask ? 'Edit Task' : 'New Task' }}</h3>
+    
+    <form [formGroup]="taskForm" (ngSubmit)="saveTask()">
+      
+      <fieldset [disabled]="userRole !== 'Manager'" class="role-fieldset">
+        <label>Title</label>
+        <input type="text" formControlName="title" placeholder="Enter title...">
+        <span class="error-text" *ngIf="taskForm.get('title')?.invalid && taskForm.get('title')?.touched">
+          Title is required
+        </span>
+
+        <label>Description</label>
+        <textarea formControlName="description" rows="4"></textarea>
+
+        <div class="form-row">
+          <div class="form-group">
+            <label>Priority</label>
+            <select formControlName="priority">
+              <option [ngValue]="0">Low</option>
+              <option [ngValue]="1">Normal</option>
+              <option [ngValue]="2">High</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label>Assignee</label>
+            <select formControlName="assigneeId">
+              <option [ngValue]="null">Unassigned</option>
+              <option *ngFor="let u of orgUsers" [ngValue]="u.id">{{ u.name }}</option>
+            </select>
+          </div>
+        </div>
+      </fieldset>
+
+      <fieldset>
+        <label>Status</label>
+        <select formControlName="status">
+          <option [ngValue]="0">To Do</option>
+          <option [ngValue]="1">In Progress</option>
+          <option [ngValue]="2">Done</option>
+        </select>
+      </fieldset>
+
+      <div class="comments-section" *ngIf="editingTask">
+        <h4>Task Discussion</h4>
+        
+        <div class="comments-list">
+          <div *ngIf="comments.length === 0" class="no-comments">
+            No comments yet. Be the first to comment!
+          </div>
+          <div class="comment-item" *ngFor="let c of comments">
+            <div class="comment-meta">
+              <span class="comment-author">{{ c.authorName }}</span>
+              <span class="comment-date">{{ c.createdAt | date:'short' }}</span>
+            </div>
+            <p class="comment-text">{{ c.text }}</p>
+          </div>
+        </div>
+        
+        <div class="comment-form">
+          <textarea [(ngModel)]="newCommentText" [ngModelOptions]="{standalone: true}" placeholder="Write a comment..."></textarea>
+          <button type="button" class="btn-primary btn-sm" (click)="submitComment()">Send</button>
+        </div>
+      </div>
+
+      <div class="form-actions">
+        <button type="submit" class="btn-primary" [disabled]="taskForm.invalid">Save</button>
+        <button type="button" class="btn-secondary" (click)="closeForm()">Cancel</button>
+      </div>
+      
+    </form>
+  </div>
+</div>
+	<!--MODAL[END]-->
+  
+    <div class="task-card" *ngFor="let item of workItems" (click)="openEditForm(item)">
+      <div class="card-header">
+        <span class="status" [class]="'status-' + item.status">{{ getStatusName(item.status) }}</span>
+        <span class="priority" [class]="'priority-' + item.priority">{{ getPriorityName(item.priority) }}</span>
+      </div>
+      <h3>{{ item.title }}</h3>
+      <p class="desc">{{ item.description }}</p>
+      <div class="card-footer">
+        <small>Assignee: {{ item.assigneeName || 'not assignee' }}</small>
+        <small *ngIf="item.dueDate">Time: {{ item.dueDate | date:'shortDate' }}</small>
+      </div>
+    </div>
+  </div>
+
+<div class="pagination" style="display: flex; justify-content: center; gap: 15px; margin-top: 20px;" *ngIf="totalCount > 0">
+  <button class="btn-secondary" [disabled]="currentPage === 1" (click)="prevPage()">Prev</button>
+  <span>Page {{ currentPage }} (Total: {{ totalCount }})</span>
+  <button class="btn-secondary" [disabled]="currentPage * pageSize >= totalCount" (click)="nextPage()">Next</button>
+</div>
+
+</div>

@@ -27,7 +27,7 @@ namespace WorkQueue.Infrastructure
 
         public Guid? GetUserId()
         {
-            // ClaimTypes.NameIdentifier обычно мапится на субъект (sub) в JWT
+            // ClaimTypes.NameIdentifier 
             var userIdStr = _httpContextAccessor.HttpContext?.User?.FindFirst(ClaimTypes.NameIdentifier)?.Value
                          ?? _httpContextAccessor.HttpContext?.User?.FindFirst(JwtRegisteredClaimNames.Sub)?.Value;
 

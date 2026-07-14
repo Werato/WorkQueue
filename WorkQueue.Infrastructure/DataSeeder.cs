@@ -9,7 +9,6 @@ namespace WorkQueue.Infrastructure
     {
         public static void Initialize(WorkQueueDbContext context)
         {
-            // Если данные уже есть, выходим
             if (context.Organizations.Any()) return;
 
             var orgA = new Organization { Id = Guid.NewGuid(), Name = "Organization A" };

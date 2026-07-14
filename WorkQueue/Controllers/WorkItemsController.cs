@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using System.Security.Claims;
 using WorkQueue.Domain.Entities;
 using WorkQueue.Domain.Enums;
+using WorkQueue.DTO;
 using WorkQueue.Infrastructure;
 
 namespace WorkQueue.Controllers
@@ -23,33 +24,98 @@ namespace WorkQueue.Controllers
         }
 
         // GET: api/workitems
+        //[HttpGet]
+        //public async Task<IActionResult> Get([FromQuery] int? status, [FromQuery] int? priority)
+        //{
+        //    // WHERE OrganizationId = ...
+        //    var query = _context.WorkItems.Include(w => w.AssigneeUser).AsQueryable();
+
+        //    if (status.HasValue)
+        //        query = query.Where(w => (int)w.Status == status.Value);
+
+        //    if (priority.HasValue)
+        //        query = query.Where(w => (int)w.Priority == priority.Value);
+
+        //    var items = await query.Select(w => new
+        //    {
+        //        w.Id,
+        //        w.Title,
+        //        w.Description,
+        //        Status = (int)w.Status,
+        //        Priority = (int)w.Priority,
+        //        w.DueDate,
+        //        AssigneeId = w.AssigneeUser != null ? w.AssigneeUser.Id : (Guid?)null,
+        //        AssigneeName = w.AssigneeUser != null ? w.AssigneeUser.Name : null
+        //    }).ToListAsync();
+
+        //    return Ok(items);
+        //}
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] int? status, [FromQuery] int? priority)
+        public async Task<IActionResult> Get([FromQuery] WorkItemQueryParameters parameters)
         {
-            // WHERE OrganizationId = ...
-            var query = _context.WorkItems.Include(w => w.AssigneeUser).AsQueryable();
+            // EF Core Global Query Filter handles Tenant Isolation automatically
+            var query = _context.WorkItems
+                .Include(w => w.AssigneeUser)
+                .AsQueryable();
 
-            if (status.HasValue)
-                query = query.Where(w => (int)w.Status == status.Value);
-
-            if (priority.HasValue)
-                query = query.Where(w => (int)w.Priority == priority.Value);
-
-            var items = await query.Select(w => new
+            // Search by title or description
+            if (!string.IsNullOrWhiteSpace(parameters.Search))
             {
-                w.Id,
-                w.Title,
-                w.Description,
-                Status = (int)w.Status,
-                Priority = (int)w.Priority,
-                w.DueDate,
-                AssigneeId = w.AssigneeUser != null ? w.AssigneeUser.Id : (Guid?)null,
-                AssigneeName = w.AssigneeUser != null ? w.AssigneeUser.Name : null
-            }).ToListAsync();
+                var searchTerm = parameters.Search.ToLower();
+                query = query.Where(w =>
+                    w.Title.ToLower().Contains(searchTerm) ||
+                    (w.Description != null && w.Description.ToLower().Contains(searchTerm)));
+            }
 
-            return Ok(items);
+            // Filter by status, priority, and assignee
+            if (parameters.Status.HasValue)
+                query = query.Where(w => (int)w.Status == parameters.Status.Value);
+
+            if (parameters.Priority.HasValue)
+                query = query.Where(w => (int)w.Priority == parameters.Priority.Value);
+
+            if (parameters.AssigneeId.HasValue)
+                query = query.Where(w => w.AssigneeUserId == parameters.AssigneeId.Value);
+
+            // Sorting
+            query = parameters.SortBy?.ToLower() switch
+            {
+                "createddate" => query.OrderBy(w => w.CreatedAt),
+                "duedate" => query.OrderBy(w => w.DueDate),
+                "priority" => query.OrderBy(w => w.Priority),
+                "status" => query.OrderBy(w => w.Status),
+                _ => query.OrderByDescending(w => w.CreatedAt) // Default
+            };
+
+            // Get total count before pagination
+            var totalCount = await query.CountAsync();
+
+            // Pagination
+            var items = await query
+                .Skip((parameters.Page - 1) * parameters.PageSize)
+                .Take(parameters.PageSize)
+                .Select(w => new
+                {
+                    w.Id,
+                    w.Title,
+                    w.Description,
+                    Status = (int)w.Status,
+                    Priority = (int)w.Priority,
+                    w.DueDate,
+                    AssigneeId = w.AssigneeUser != null ? w.AssigneeUser.Id : (Guid?)null,
+                    AssigneeName = w.AssigneeUser != null ? w.AssigneeUser.Name : null
+                }).ToListAsync();
+
+            var response = new PagedResponse<object>
+            {
+                Items = items,
+                TotalCount = totalCount,
+                Page = parameters.Page,
+                PageSize = parameters.PageSize
+            };
+
+            return Ok(response);
         }
-
         // POST: api/workitems
         [HttpPost]
         public async Task<IActionResult> Create([FromBody] CreateWorkItemRequest request)
@@ -77,8 +143,8 @@ namespace WorkQueue.Controllers
             return Ok(workItem.Id);
         }
 
-        // PUT: api/workitems/{id}
-        [HttpPut("{id}")]
+        // Patch: api/workitems/{id}
+        [HttpPatch("{id}")]
         public async Task<IActionResult> Update(Guid id, [FromBody] UpdateWorkItemRequest request)
         {
             var workItem = await _context.WorkItems.FindAsync(id);
@@ -90,7 +156,6 @@ namespace WorkQueue.Controllers
             // Проверка бизнес-логики по ТЗ
             if (userRole == "Manager")
             {
-                // Менеджер может менять всё
                 workItem.Title = request.Title;
                 workItem.Description = request.Description;
                 workItem.Priority = (WorkItemPriority)request.Priority;
@@ -100,7 +165,6 @@ namespace WorkQueue.Controllers
             }
             else if (userRole == "Member")
             {
-                // Member может менять только статус, и только если он исполнитель
                 if (workItem.AssigneeUserId != userId)
                 {
                     return Forbid("Вы не можете менять чужую задачу.");
@@ -113,8 +177,16 @@ namespace WorkQueue.Controllers
                 return Forbid();
             }
 
-            await _context.SaveChangesAsync();
-            return Ok();
+            try
+            {
+                await _context.SaveChangesAsync();
+                return Ok();
+            }
+            catch (DbUpdateConcurrencyException)
+            {
+                return Conflict("The record was modified by another user.");
+            }
+
         }
     }
 

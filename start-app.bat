@@ -18,7 +18,7 @@ echo "All tests passed successfully!"
 :: 2. Start Backend API in a new window
 echo "Starting Backend API..."
 cd WorkQueue
-start "Backend API" cmd /k "dotnet run"
+start "Backend API" cmd /k "dotnet run --launch-profile https"
 cd ..
 
 :: Give the backend a few seconds to warm up
